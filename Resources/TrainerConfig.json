@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "app": {
+    "name": "No Mans Sky Trainer",
+    "bundleIdentifier": "local.mactrainer.nomanssky",
+    "version": "0.2.0",
+    "build": "2"
+  },
+  "profiles": [
+    {
+      "id": "nms-steam-arm64",
+      "name": "No Man’s Sky · Steam arm64 · teilweise im Spiel geprüft",
+      "enabled": true,
+      "bundleIdentifier": "uk.co.hellogames.nms",
+      "executable": "No Man's Sky",
+      "uuids": [
+        "2E807BC6-A953-3F93-B723-42A2FB9E39CB"
+      ],
+      "teamIdentifier": "8H477MC9Y6",
+      "version": "4.70",
+      "steamAppID": "275850"
+    }
+  ]
+}

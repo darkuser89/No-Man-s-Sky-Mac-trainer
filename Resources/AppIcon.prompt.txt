@@ -1,0 +1,6 @@
+Asset: AppIcon.png
+Generator: built-in image_gen tool; transparent_background=true.
+Build: script/build_and_run.sh resizes this master into the standard macOS ICNS sizes.
+
+Final prompt:
+Use case: logo-brand. Asset type: final macOS application icon for a No Man's Sky game trainer, square 1024x1024. Create one polished standalone icon, not a mockup. A bold, vertically elongated faceted red-orange Atlas crystal/diamond emblem floats centered over a restrained dark petrol and deep-space blue rounded-square tile. A very subtle curved cyan planetary horizon near the bottom suggests space exploration. Integrate one small crisp cyan lightning-bolt badge at the lower-right edge of the crystal to signify trainer/boost functionality. Premium sculpted glass and metal material, carefully controlled highlights, clean geometric silhouette, high contrast and readable at 32px. The rounded-square tile occupies approximately 88 percent of the canvas with generous macOS icon-safe margins, fully transparent outside the tile with a restrained soft shadow. Composition frontal and symmetric except the small lightning accent, few broad facets, no busy starfield. No text, no letters, no game screenshots, no advertising, no game controller, no extra badges. Deliver finished icon art with genuine alpha transparency.

@@ -1,0 +1,94 @@
+name: Build and Release
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 20
+    env:
+      MT_TRAINER_BUILD_DIR: ${{ runner.temp }}/NoMansSkyTrainer
+    outputs:
+      version: ${{ steps.metadata.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Validate version and toolchain
+        id: metadata
+        shell: bash
+        run: |
+          test "$(uname -m)" = arm64
+          xcodebuild -version
+          python3 - <<'PY'
+          import json, os, re
+          from pathlib import Path
+          version = json.loads(Path('Resources/TrainerConfig.json').read_text())['app']['version']
+          if not re.fullmatch(r'\d+\.\d+\.\d+', version):
+              raise SystemExit('Expected a numeric major.minor.patch version.')
+          if os.environ['GITHUB_REF_TYPE'] == 'tag' and os.environ['GITHUB_REF_NAME'] != 'v' + version:
+              raise SystemExit('Release tag must match TrainerConfig.json version.')
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'version={version}\n')
+          PY
+      - name: Build, test and verify signatures
+        run: ./script/build_and_run.sh --build-only
+      - name: Package app and checksums
+        run: ./script/package_release.sh
+      - name: Upload tested package
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: NoMansSkyTrainer-macOS-arm64
+          path: ${{ env.MT_TRAINER_BUILD_DIR }}/Release/*
+          if-no-files-found: error
+          retention-days: 7
+
+  release:
+    needs: build
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: NoMansSkyTrainer-macOS-arm64
+          path: package
+      - name: Publish successful build
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.build.outputs.version }}
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF_TYPE" == tag ]]; then
+            TAG="$GITHUB_REF_NAME"
+            TITLE="No Man’s Sky Trainer $VERSION"
+            PRERELEASE=false
+            LATEST=true
+          else
+            TAG="build-$GITHUB_RUN_NUMBER"
+            TITLE="No Man’s Sky Trainer $VERSION · Build $GITHUB_RUN_NUMBER"
+            PRERELEASE=true
+            LATEST=false
+          fi
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" --target "$GITHUB_SHA" --title "$TITLE" \
+              --notes-file package/RELEASE_NOTES.md --draft
+          fi
+          gh release upload "$TAG" package/*.zip package/SHA256SUMS --clobber
+          gh release edit "$TAG" --draft=false --prerelease="$PRERELEASE" --latest="$LATEST"
